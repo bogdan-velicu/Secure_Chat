@@ -9,13 +9,23 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "@react-native-async-storage/async-storage": "^1.21.0",
+    "@supabase/supabase-js": "^2.42.0",
+    "aes-js": "^3.1.2",
+    "buffer": "^6.0.3",
     "expo": "~50.0.14",
+    "expo-secure-store": "~12.8.1",
     "expo-status-bar": "~1.11.1",
     "react": "18.2.0",
-    "react-native": "0.73.6"
+    "react-native": "0.73.6",
+    "react-native-elements": "^3.4.3",
+    "react-native-get-random-values": "~1.8.0",
+    "react-native-url-polyfill": "^2.0.0",
+    "tweetnacl": "^1.0.3"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
+    "@types/aes-js": "^3.1.4",
     "@types/react": "~18.2.45",
     "typescript": "^5.1.3"
   },
