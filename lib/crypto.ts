@@ -1,58 +1,52 @@
 import nacl from "tweetnacl";
-import { Buffer } from "buffer";
+import naclUtil from "tweetnacl-util";
+import { saveKey, getKey } from "./secureStore";
 
-const keyPair = nacl.box.keyPair();
-const publicKey = keyPair.publicKey;
-const privateKey = keyPair.secretKey;
-
-const stringToUint8Array = (str: string) => {
-  const arr = new Uint8Array(str.length * 2);
-  for (let i = 0, j = 0; i < str.length; i++, j += 2) {
-    arr[j] = str.charCodeAt(i) & 0xff;
-    arr[j + 1] = str.charCodeAt(i) >> 8;
-  }
-  return arr;
-};
-
-const uint8ArrayToString = (arr: Uint8Array) => {
-  let str = "";
-  for (let i = 0; i < arr.length; i += 2) {
-    str += String.fromCharCode(arr[i] + (arr[i + 1] << 8));
-  }
-  return str;
-};
-
-const encode = (message: string) => stringToUint8Array(message);
-const decode = (message: Uint8Array) => uint8ArrayToString(message);
-
-function encodeToBase64(buffer: Uint8Array) {
-  return Buffer.from(buffer).toString("base64");
+// Generate and store a new key pair
+export async function generateAndStoreKeyPair() {
+  const keyPair = nacl.box.keyPair();
+  await saveKey("publicKey", naclUtil.encodeBase64(keyPair.publicKey));
+  await saveKey("secretKey", naclUtil.encodeBase64(keyPair.secretKey));
 }
 
-function decodeFromBase64(buffer: string) {
-  return Buffer.from(buffer, "base64");
-}
-
-const encryptMessage = (message: string) => {
-  const nonce = nacl.randomBytes(nacl.box.nonceLength);
-  const encrypted = nacl.box(encode(message), nonce, publicKey, privateKey);
+export async function getStoredKeyPair() {
+  const publicKey = await getKey("publicKey");
+  const secretKey = await getKey("secretKey");
+  if (!publicKey || !secretKey) throw new Error("Key pair not found");
   return {
-    message: encodeToBase64(encrypted),
-    nonce: encodeToBase64(nonce),
+    publicKey: naclUtil.decodeBase64(publicKey),
+    secretKey: naclUtil.decodeBase64(secretKey),
   };
+}
+
+// Encrypt message
+export const encryptMessage = (
+  message: string,
+  nonce: Uint8Array,
+  publicKey: Uint8Array,
+  secretKey: Uint8Array,
+) => {
+  const messageUint8 = naclUtil.decodeUTF8(message);
+  const encrypted = nacl.box(messageUint8, nonce, publicKey, secretKey);
+  return naclUtil.encodeBase64(encrypted);
 };
 
-const decryptMessage = (message: string, nonce: string) => {
-  const decrypted = nacl.box.open(
-    decodeFromBase64(message),
-    decodeFromBase64(nonce),
-    publicKey,
-    privateKey,
-  );
+// Decrypt message
+export const decryptMessage = (
+  encryptedMessage: string,
+  nonce: Uint8Array,
+  publicKey: Uint8Array,
+  secretKey: Uint8Array,
+) => {
+  const messageUint8 = naclUtil.decodeBase64(encryptedMessage);
+  const decrypted = nacl.box.open(messageUint8, nonce, publicKey, secretKey);
   if (!decrypted) {
-    throw new Error("Could not decrypt message");
+    throw new Error("Decryption failed");
   }
-  return decode(decrypted);
+  return naclUtil.encodeUTF8(decrypted);
 };
 
-export { encryptMessage, decryptMessage };
+// Generate a nonce
+export const generateNonce = () => {
+  return nacl.randomBytes(nacl.box.nonceLength);
+};
