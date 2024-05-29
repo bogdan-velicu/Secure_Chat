@@ -1,26 +1,45 @@
 import React from "react";
+import { TouchableOpacity } from "react-native";
 import { View, Text, Image, StyleSheet } from "react-native";
+import { router } from "expo-router";
 
-// Dummy data for demo purposes
-const chat = {
-  avatar_url: "https://avatars.githubusercontent.com/u/31011142?v=4",
-  name: "Bogdan Velicu",
-  lastMessage: "Hey, how are you?",
-  timestamp: "15:30",
-};
+import groupChat from "../assets/group-chat.png";
 
-export default function ChatItem({ chat }) {
+interface Message {
+  id: string;
+  user: string;
+  msg: string;
+  timestamp: string;
+}
+
+interface Chat {
+  avatar_url: string;
+  name: string;
+  lastMessage: Message;
+}
+
+export default function ChatItem({ chat }: { chat: Chat }) {
   return (
-    <View style={styles.chatItem}>
-      <Image source={{ uri: chat.avatar_url }} style={styles.avatar} />
+    <TouchableOpacity
+      style={styles.chatItem}
+      onPress={() => {
+        router.push({
+          pathname: `bottom_bar/chats/${chat.name}`,
+        });
+      }}
+    >
+      <Image
+        source={chat.avatar_url ? { uri: chat.avatar_url } : groupChat}
+        style={styles.avatar}
+      />
       <View style={styles.chatDetails}>
         <View style={styles.chatHeader}>
           <Text style={styles.chatName}>{chat.name}</Text>
-          <Text style={styles.chatTimestamp}>{chat.timestamp}</Text>
+          <Text style={styles.chatTimestamp}>{chat.lastMessage.timestamp}</Text>
         </View>
-        <Text style={styles.chatMessage}>{chat.lastMessage}</Text>
+        <Text style={styles.chatMessage}>{chat.lastMessage.msg}</Text>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 

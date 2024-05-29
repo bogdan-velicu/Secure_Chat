@@ -1,18 +1,57 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, SafeAreaView, ScrollView } from "react-native";
-import { router } from "expo-router";
-import ChatItem from "./ChatItem"; // Assuming you have the ChatItem component in the same directory
+import React, { useEffect, useState } from "react";
+import { StyleSheet, SafeAreaView, ScrollView } from "react-native";
+import ChatItem from "./ChatItem";
+import { supabase } from "../lib/supabase";
+import { decryptMessage } from "../lib/crypto";
 
-export default function ChatsListComponent(props: any) {
+interface Message {
+  id: string;
+  user: string;
+  msg: string;
+  timestamp: string;
+}
+
+export default function ChatsListComponent() {
   const [chats, setChats] = useState<any>([
     {
-      avatar_url: "https://avatars.githubusercontent.com/u/31011142?v=4",
-      name: "Bogdan Velicu",
-      lastMessage: "Hey, how are you?",
-      timestamp: "15:30",
+      avatar_url: "",
+      name: "Group Chat",
+      lastMessage: {
+        id: "",
+        user: "",
+        msg: "",
+        timestamp: "",
+      },
     },
-    // Add more chat objects here
   ]);
+
+  useEffect(() => {
+    // Fetch last message from chat
+    async function fetchLastMessage() {
+      const { data, error } = await supabase
+        .from("messages")
+        .select("*")
+        .order("timestamp", { ascending: false })
+        .limit(1);
+      if (error) {
+        console.error("Error fetching last message:", error.message);
+        return;
+      }
+      if (data) {
+        console.log("Last message:", data[0]);
+        const message = data[0] as Message;
+        message.msg = decryptMessage(message.msg);
+        message.timestamp = new Date(message.timestamp).toLocaleTimeString();
+        message.msg =
+          message.msg.length > 50
+            ? message.msg.slice(0, 50) + "..."
+            : message.msg;
+        chats[0].lastMessage = message;
+        setChats([...chats]);
+      }
+    }
+    fetchLastMessage();
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>

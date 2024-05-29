@@ -23,11 +23,14 @@ export default function ProfileScreen() {
   const { session } = useAppContext();
 
   useEffect(() => {
-    console.log("session", session);
     if (session) {
       if (session.user.user_metadata.user_name)
         setUserMetadata(session.user.user_metadata);
-      else setUserMetadata(guestMetadata);
+      else {
+        guestMetadata.preferred_username =
+          "guest_" + session?.user.id.slice(-3);
+        setUserMetadata(guestMetadata);
+      }
     }
   }, []);
 

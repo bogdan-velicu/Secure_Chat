@@ -10,24 +10,38 @@ import {
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { supabase } from "../../../lib/supabase";
-import {
-  encryptMessage,
-  getStoredKeyPair,
-  decryptMessage,
-  generateAndStoreKeyPair,
-  generateNonce,
-} from "../../../lib/crypto";
+import { useAppContext } from "../../../context/AppContext";
+import { encryptMessage, decryptMessage } from "../../../lib/crypto";
+
+interface Message {
+  id: string;
+  user: string;
+  msg: string;
+  timestamp: string;
+}
 
 export default function ChatScreen() {
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [msg, setMsg] = useState("");
 
+  const { session } = useAppContext();
+
   useEffect(() => {
-    const initializeKeys = async () => {
-      // Your key initialization logic here
+    // Fetch messages
+    const fetchMessages = async () => {
+      const { data } = await supabase.from("messages").select("*");
+      if (data) {
+        const decryptedMessages = data.map((msg) => {
+          return {
+            ...msg,
+            msg: decryptMessage(msg.msg),
+          };
+        });
+        setMessages(decryptedMessages);
+      }
     };
 
-    initializeKeys();
+    fetchMessages();
 
     // Subscribe to messages
     const subscription = supabase
@@ -38,15 +52,17 @@ export default function ChatScreen() {
           event: "INSERT",
           schema: "public",
         },
-        (payload) => console.log(payload),
+        (payload) => {
+          const newMessage: Message = {
+            id: payload.new.id,
+            user: payload.new.user,
+            msg: decryptMessage(payload.new.msg),
+            timestamp: payload.new.timestamp,
+          } as Message;
+          setMessages((prev) => [...prev, newMessage]);
+        },
       )
       .subscribe();
-    // const subscription = supabase
-    //   .from("messages")
-    //   .on("INSERT", async (payload) => {
-    //     // Your message handling logic here
-    //   })
-    //   .subscribe();
 
     return () => {
       subscription.unsubscribe();
@@ -54,14 +70,16 @@ export default function ChatScreen() {
   }, []);
 
   const handleSend = async () => {
-    const nonce = generateNonce();
-    const { publicKey, secretKey } = await getStoredKeyPair(); // Assume this is a function you've defined
-    const encryptedMsg = encryptMessage(msg, nonce, publicKey, secretKey);
-
-    const { error } = await supabase
-      .from("messages")
-      .insert([{ user: "currentUser", msg: encryptedMsg, nonce, publicKey }]);
-
+    const encryptedMsg = encryptMessage(msg);
+    const { error } = await supabase.from("messages").insert([
+      {
+        user:
+          session?.user.user_metadata.user_name ||
+          "guest_" + session?.user.id.slice(-3),
+        msg: encryptedMsg,
+      },
+    ]);
+    console.log("Error sending message", error);
     if (!error) setMsg("");
   };
 
@@ -72,9 +90,27 @@ export default function ChatScreen() {
         style={[styles.msgList, styles.shadow]}
         contentContainerStyle={styles.msgListContainer}
         renderItem={({ item }) => (
-          <Text style={{ fontSize: 20 }}>
-            {item.user}: {item.msg}
-          </Text>
+          <View
+            style={[
+              styles.messageBubble,
+              {
+                alignSelf:
+                  item.user === session?.user.user_metadata.user_name ||
+                  item.user === "guest_" + session?.user.id.slice(-3)
+                    ? "flex-end"
+                    : "flex-start",
+              },
+            ]}
+          >
+            <Text style={styles.messageUser}>@{item.user}</Text>
+            <Text style={styles.messageText}>{item.msg}</Text>
+            <Text style={styles.messageTimestamp}>
+              {new Date(item.timestamp).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </Text>
+          </View>
         )}
       />
       <View style={[styles.sendContainer, styles.shadow]}>
@@ -92,7 +128,7 @@ export default function ChatScreen() {
           value={msg}
         />
         <TouchableOpacity onPress={handleSend} style={styles.sendButton}>
-          <MaterialIcons name="send" size={24} color="gray" />
+          <MaterialIcons name="send" size={24} color="white" />
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -118,8 +154,8 @@ const styles = StyleSheet.create({
     padding: 10,
     margin: 5,
     borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "lightgray",
+    backgroundColor: "dodgerblue",
+    elevation: 3,
   },
   sendContainer: {
     display: "flex",
@@ -138,5 +174,24 @@ const styles = StyleSheet.create({
     display: "flex",
     flexDirection: "column",
     justifyContent: "flex-end",
+  },
+  messageBubble: {
+    backgroundColor: "#e1ffc7",
+    padding: 10,
+    borderRadius: 10,
+    marginBottom: 10,
+    maxWidth: "80%",
+  },
+  messageUser: {
+    fontWeight: "bold",
+    marginBottom: 5,
+  },
+  messageText: {
+    fontSize: 16,
+  },
+  messageTimestamp: {
+    fontSize: 12,
+    color: "gray",
+    textAlign: "right",
   },
 });

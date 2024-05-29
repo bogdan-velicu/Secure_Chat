@@ -1,16 +1,9 @@
-import React, { useState } from "react";
-// import { encryptMessage, decryptMessage } from "../../lib/crypto";
-import { View, Text, StyleSheet, SafeAreaView } from "react-native";
-import { router, useLocalSearchParams } from "expo-router";
+import React from "react";
+import { StyleSheet, SafeAreaView } from "react-native";
 import { ScrollView } from "react-native";
-import { TouchableHighlight } from "react-native";
 import ChatsListComponent from "../../../components/ChatListComponent";
 
-export default function ChatsList(props: any) {
-  const [chats, setChats] = useState<any>(["Group Chat"]);
-
-  const { user } = useLocalSearchParams();
-
+export default function ChatsList() {
   return (
     <SafeAreaView style={[styles.container]}>
       <ScrollView
@@ -18,19 +11,6 @@ export default function ChatsList(props: any) {
         contentContainerStyle={styles.msgListContainer}
       >
         <ChatsListComponent />
-        {/* {chats.map((chat: any, index: number) => (
-          <TouchableHighlight
-            key={index}
-            underlayColor="lightgray"
-            onPress={() =>
-              router.push({
-                pathname: `bottom_bar/chats/${chat}`,
-              })
-            }
-          >
-            <Text>{chat}</Text>
-          </TouchableHighlight>
-        ))} */}
       </ScrollView>
     </SafeAreaView>
   );

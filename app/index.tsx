@@ -79,12 +79,12 @@ export default function MainPage() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log("getSession: ", session);
+      console.log("getSession: ", session?.user);
       setSession(session);
     });
 
     supabase.auth.onAuthStateChange((_event, session) => {
-      console.log("onAuthStateChange: ", session);
+      console.log("onAuthStateChange: ", session?.user);
       setSession(session);
       if (session) {
         router.push({
