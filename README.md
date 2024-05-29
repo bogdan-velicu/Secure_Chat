@@ -17,7 +17,9 @@
 
 ## Screenshots
 
-![Screenshot 1](./screenshots/pic1.jpeg)
-![Screenshot 2](./screenshots/pic2.jpeg)
-![Screenshot 3](./screenshots/pic3.jpeg)
-![Screenshot 4](./screenshots/pic4.jpeg)
+<div style="display: flex; justify-content: space-between;">
+  <img src="./screenshots/pic1.jpeg" alt="Screenshot 1" style="width: 24%;"/>
+  <img src="./screenshots/pic2.jpeg" alt="Screenshot 2" style="width: 24%;"/>
+  <img src="./screenshots/pic3.jpeg" alt="Screenshot 3" style="width: 24%;"/>
+  <img src="./screenshots/pic4.jpeg" alt="Screenshot 4" style="width: 24%;"/>
+</div>
